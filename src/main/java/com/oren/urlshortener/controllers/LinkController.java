@@ -16,8 +16,8 @@ public class LinkController {
     private LinkService linkService;
 
     @PostMapping("/create-short-url")
-    public ResponseEntity<?> createShortUrl(@RequestHeader String longUrl) throws InvalidURIException {
-        return new ResponseEntity<>(linkService.createShortUrl(longUrl), HttpStatus.OK);
+    public ResponseEntity<?> createShortUrl(@RequestHeader String longUrl, @RequestHeader String username) throws InvalidURIException {
+        return new ResponseEntity<>(linkService.createShortUrl(longUrl, username), HttpStatus.OK);
     }
 
     @GetMapping("/at/{shortUrl}/")

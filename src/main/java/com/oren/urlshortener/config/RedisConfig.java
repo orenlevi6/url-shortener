@@ -46,7 +46,7 @@ public class RedisConfig {
         return new JedisConnectionFactory(redisConfig, clientConfig);
     }
 
-    //    Config used to flush DB on start
+    //    This config is used to flush DB on start
     @Bean
     public Jedis jedis() {
         Jedis jedis = new Jedis();

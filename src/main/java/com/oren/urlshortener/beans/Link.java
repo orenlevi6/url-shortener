@@ -11,10 +11,12 @@ public class Link implements Serializable {
     private String shortUrl;
 
     private String longUrl;
+    private String submittedUsername;
 
-    public Link(String shortUrl, String longUrl) {
+    public Link(String shortUrl, String longUrl, String submittedUsername) {
         this.shortUrl = shortUrl;
         this.longUrl = longUrl;
+        this.submittedUsername = submittedUsername;
     }
 
     public Link() {
@@ -41,18 +43,29 @@ public class Link implements Serializable {
         this.longUrl = longUrl;
     }
 
+    public String getSubmittedUsername() {
+        return submittedUsername;
+    }
+
+    public void setSubmittedUsername(String submittedUsername) {
+        this.submittedUsername = submittedUsername;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Link{");
         sb.append("shortUrl='").append(shortUrl).append('\'');
         sb.append(", longUrl='").append(longUrl).append('\'');
+        sb.append(", submittedUsername='").append(submittedUsername).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
+
     public static final class LinkBuilder {
         private String shortUrl;
         private String longUrl;
+        private String submittedUsername;
 
         private LinkBuilder() {
 
@@ -68,8 +81,17 @@ public class Link implements Serializable {
             return this;
         }
 
+        public LinkBuilder submittedUsername(String submittedUsername) {
+            this.submittedUsername = submittedUsername;
+            return this;
+        }
+
         public Link build() {
-            return new Link(shortUrl, longUrl);
+            Link link = new Link();
+            link.setShortUrl(shortUrl);
+            link.setLongUrl(longUrl);
+            link.setSubmittedUsername(submittedUsername);
+            return link;
         }
     }
 

@@ -1,16 +1,23 @@
 package com.oren.urlshortener.services;
 
 import com.oren.urlshortener.beans.Link;
+import com.oren.urlshortener.beans.User;
 import com.oren.urlshortener.exceptions.NotExistException;
 import com.oren.urlshortener.repositories.LinkRepo;
+import com.oren.urlshortener.repositories.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.exceptions.InvalidURIException;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -26,7 +33,13 @@ public class LinkService {
     @Autowired
     private LinkRepo linkRepo;
 
-    public String createShortUrl(String longUrl) throws InvalidURIException {
+    @Autowired
+    private UserRepo userRepo;
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
+
+    public String createShortUrl(String longUrl, String username) throws InvalidURIException {
         Optional<Link> optionalLink = extractOptionalLink(longUrl);
         if (optionalLink.isPresent()) {
             return BASE_URL + optionalLink.get().getShortUrl() + "/";
@@ -39,12 +52,20 @@ public class LinkService {
             throw new InvalidURIException("Please make sure your URL is valid");
         }
 
+        String user;
+        Optional<User> optionalUser = userRepo.findByUsername(username);
+        if (optionalUser.isEmpty()) {
+            user = "Anonymous";
+        } else {
+            user = username;
+        }
+
         String newShortUrl;
         do {
             newShortUrl = generateShortUrl();
         } while (linkRepo.findById(newShortUrl).isPresent());
 
-        Link newLink = new Link(newShortUrl, longUrl);
+        Link newLink = new Link(newShortUrl, longUrl, user);
         linkRepo.save(newLink);
         return BASE_URL + newLink.getShortUrl() + "/";
     }
@@ -53,7 +74,18 @@ public class LinkService {
         Link optionalLink = linkRepo.findById(shortUrl)
                 .orElseThrow(() -> new NotExistException("Short URL was not found"));
 
+        incrementMongoField(optionalLink.getSubmittedUsername(), "allUrlSearches");
+        incrementMongoField(optionalLink.getSubmittedUsername(),
+                String.format("searches.%s.clicks.%s", shortUrl, formatDate()));
+
         return optionalLink.getLongUrl();
+    }
+
+    private Optional<Link> extractOptionalLink(String longUrl) {
+        List<Link> links = (List<Link>) linkRepo.findAll();
+        return links.stream()
+                .filter(link -> link.getLongUrl().equals(longUrl))
+                .findAny();
     }
 
     private String generateShortUrl() {
@@ -65,11 +97,18 @@ public class LinkService {
         return result.toString();
     }
 
-    private Optional<Link> extractOptionalLink(String longUrl) {
-        List<Link> links = (List<Link>) linkRepo.findAll();
-        return links.stream()
-                .filter(link -> link.getLongUrl().equals(longUrl))
-                .findAny();
+    private void incrementMongoField(String username, String key) {
+        Query query = Query.query(Criteria.where("username").is(username));
+        Update update = new Update().inc(key, 1);
+        mongoTemplate.updateFirst(query, update, "users");
+    }
+
+    private String formatDate() {
+        LocalDate localDate = LocalDate.now();
+        int day = localDate.getDayOfMonth();
+        int month = localDate.getMonthValue();
+        int year = localDate.getYear();
+        return String.format("%d-%d-%d", day, month, year);
     }
 
 }
