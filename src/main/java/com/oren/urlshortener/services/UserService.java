@@ -1,7 +1,9 @@
 package com.oren.urlshortener.services;
 
 import com.oren.urlshortener.beans.User;
+import com.oren.urlshortener.beans.UserClick;
 import com.oren.urlshortener.exceptions.NotExistException;
+import com.oren.urlshortener.repositories.UserClickRepo;
 import com.oren.urlshortener.repositories.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,6 +14,9 @@ import java.util.List;
 public class UserService {
     @Autowired
     private UserRepo userRepo;
+
+    @Autowired
+    private UserClickRepo userClickRepo;
 
     public User addUser(String username) {
         User user = User.builder().username(username).build();
@@ -35,6 +40,14 @@ public class UserService {
 
     public User getUserByUsername(String username) throws NotExistException {
         return userRepo.findByUsername(username).orElseThrow(() -> new NotExistException("User ID was not found"));
+    }
+
+    public List<UserClick> getUserClicks(String username) throws NotExistException {
+        List<UserClick> userClicks = userClickRepo.findAllByUsername(username);
+        if (userClicks.isEmpty()) {
+            throw new NotExistException(("No clicks were used"));
+        }
+        return userClicks;
     }
 
 }

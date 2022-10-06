@@ -2,8 +2,11 @@ package com.oren.urlshortener.services;
 
 import com.oren.urlshortener.beans.Link;
 import com.oren.urlshortener.beans.User;
+import com.oren.urlshortener.beans.UserClick;
+import com.oren.urlshortener.beans.UserClickKey;
 import com.oren.urlshortener.exceptions.NotExistException;
 import com.oren.urlshortener.repositories.LinkRepo;
+import com.oren.urlshortener.repositories.UserClickRepo;
 import com.oren.urlshortener.repositories.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,7 +20,8 @@ import redis.clients.jedis.exceptions.InvalidURIException;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.time.LocalDate;
+import java.time.*;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -38,6 +42,9 @@ public class LinkService {
 
     @Autowired
     private MongoTemplate mongoTemplate;
+
+    @Autowired
+    private UserClickRepo userClickRepo;
 
     public String createShortUrl(String longUrl, String username) throws InvalidURIException {
         Optional<Link> optionalLink = extractOptionalLink(longUrl);
@@ -78,6 +85,8 @@ public class LinkService {
         incrementMongoField(optionalLink.getSubmittedUsername(),
                 String.format("searches.%s.clicks.%s", shortUrl, formatDate()));
 
+        userClickRepo.save(createUserClick(optionalLink));
+
         return optionalLink.getLongUrl();
     }
 
@@ -109,6 +118,19 @@ public class LinkService {
         int month = localDate.getMonthValue();
         int year = localDate.getYear();
         return String.format("%d-%d-%d", day, month, year);
+    }
+
+    private UserClick createUserClick(Link linkGen) {
+        UserClickKey userClickKey = UserClickKey.builder()
+                .username(linkGen.getSubmittedUsername())
+                .clickTime(LocalDateTime.now(ZoneId.of("GMT+3")))
+                .build();
+
+        return UserClick.builder()
+                .userClickKey(userClickKey)
+                .shortUrl(linkGen.getShortUrl())
+                .longUrl(linkGen.getLongUrl())
+                .build();
     }
 
 }

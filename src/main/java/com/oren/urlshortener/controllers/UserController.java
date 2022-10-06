@@ -34,4 +34,9 @@ public class UserController {
         return new ResponseEntity<>(userService.getUserByUsername(username), HttpStatus.OK);
     }
 
+    @GetMapping("/{username}/clicks")
+    public ResponseEntity<?> getUserClicks(@PathVariable String username) throws NotExistException {
+        return new ResponseEntity<>(userService.getUserClicks(username), HttpStatus.OK);
+    }
+
 }
